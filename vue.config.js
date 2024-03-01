@@ -36,7 +36,28 @@ module.exports = {
       warnings: false,
       errors: true
     },
-    before: require('./mock/mock-server.js')
+    before: require('./mock/mock-server.js'),
+    proxy: {
+      // detail: https://cli.vuejs.org/config/#devserver-proxy
+      [process.env.VUE_APP_BASE_API]: {
+        target: process.env.BOOK_API,
+        // target: `http://api-dashboard.snowbot.iocoder.cn`,
+        changeOrigin: true,
+        pathRewrite: {
+          ['^' + process.env.VUE_APP_BASE_API]: ''
+        },
+        onProxyReq: function(proxyReq, req, res, options) {
+          if (req.body) {
+            const bodyData = JSON.stringify(req.body)
+            // incase if content-type is application/x-www-form-urlencoded -> we need to change to application/json
+            proxyReq.setHeader('Content-Type', 'application/json')
+            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData))
+            // stream the content
+            proxyReq.write(bodyData)
+          }
+        }
+      }
+    }
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that
